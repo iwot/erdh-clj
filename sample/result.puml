@@ -1,12 +1,10 @@
 @startuml
-package "MASTER " as MASTER {
+package "ELTEST01 " as ELTEST01 {
   entity "item_types" as item_types <<D,TRANSACTION_MARK_COLOR>> {
     + id [PK]
     --
     name
   }
-}
-package "DATA " as DATA {
   entity "items" as items <<D,TRANSACTION_MARK_COLOR>> {
     + id [PK]
     --
@@ -27,7 +25,6 @@ package "DATA " as DATA {
     gender
   }
 items  ------  item_types
-member_items  ----o|  members
-member_items  ||---{  items
+member_items  ------  members
 }
 @enduml
