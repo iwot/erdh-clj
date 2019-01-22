@@ -70,15 +70,6 @@
             :referenced_column_name (:referenced_column_name row)}) foreign-keys)
     []))
 
-; (defn get-table-ex-info-with-loop
-;   [table-name ex-info]
-;   (loop [cnt 0]
-;     (if (nth ex-info cnt nil)
-;       (if (= (:table (nth ex-info cnt)) table-name)
-;         (nth ex-info cnt)
-;         (recur (+ cnt 1)))
-;       nil)))
-
 (defn get-table-ex-info
   [table-name ex-info]
   (let [result-list (for [inf ex-info]
@@ -86,16 +77,6 @@
                         inf
                         nil))]
     (nth (remove nil? result-list) 0 nil)))
-
-; (defn merge-ex-table-info-to-db-with-loop
-;   [db-data ex-info]
-;   (loop [cnt 0
-;          result db-data]
-;     (if (nth (:tables result) cnt nil)
-;       (recur (inc cnt) (if-let [ex (:relations (get-table-ex-info (:table (nth (:tables result) cnt)) ex-info))]
-;                          (update-in result [:tables cnt :ex-relations] (fn [old] ex))
-;                          result))
-;       result)))
 
 (defn merge-ex-table-info-to-db-old
   [db-data ex-info]
@@ -134,13 +115,11 @@
   [foreign-keys]
   (let [tablenames (distinct (for [f foreign-keys] (:referenced_table_name f)))]
     (into [] (for [tbl tablenames]
-               (into {
-                      :referenced_table_name tbl
-                      :columns (into []
-                                     (for [fk foreign-keys
-                                           :when (= (:referenced_table_name fk) tbl)]
-                                       {:from (:column_name fk) :to (:referenced_column_name fk)}))
-                      :this_conn "one"
-                      :that_conn "one"
-                      })
+               {:referenced_table_name tbl
+                :columns (into []
+                               (for [fk foreign-keys
+                                     :when (= (:referenced_table_name fk) tbl)]
+                                 {:from (:column_name fk) :to (:referenced_column_name fk)}))
+                :this_conn "one"
+                :that_conn "one"}
                ))))
