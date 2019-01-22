@@ -1,0 +1,66 @@
+db_name: ELTEST01
+tables:
+- table: item_types
+  group: MASTER
+  columns:
+  - {name: id, type: int(11), key: PRI, extra: auto_increment, default: null, not-null: false}
+  - {name: name, type: varchar(30), key: '', extra: '', default: null, not-null: false}
+  indexes:
+  - {name: PRIMARY, column_name: id, seq_in_index: 1}
+  foreign-keys: []
+  ex-relations: []
+- table: items
+  group: DATA
+  columns:
+  - {name: id, type: int(11), key: PRI, extra: auto_increment, default: null, not-null: false}
+  - {name: name, type: varchar(30), key: '', extra: '', default: null, not-null: false}
+  - {name: type, type: int(11), key: MUL, extra: '', default: null, not-null: false}
+  indexes:
+  - {name: PRIMARY, column_name: id, seq_in_index: 1}
+  - {name: type, column_name: type, seq_in_index: 1}
+  foreign-keys:
+  - {constraint_name: items_ibfk_1, column_name: type, ordinal_position: 1, position_in_unique_constraint: 1,
+    referenced_table_name: item_types, referenced_column_name: id}
+  ex-relations:
+  - referenced_table_name: item_types
+    columns:
+    - {from: type, to: id}
+    this_conn: one
+    that_conn: one
+- table: member_items
+  group: DATA
+  columns:
+  - {name: id, type: int(11), key: PRI, extra: auto_increment, default: null, not-null: false}
+  - {name: member_id, type: int(11), key: MUL, extra: '', default: null, not-null: false}
+  - {name: enable, type: tinyint(4), key: MUL, extra: '', default: '0', not-null: false}
+  - {name: item_id, type: int(11), key: '', extra: '', default: null, not-null: false}
+  - {name: num, type: int(11), key: '', extra: '', default: '0', not-null: false}
+  indexes:
+  - {name: PRIMARY, column_name: id, seq_in_index: 1}
+  - {name: member_id, column_name: member_id, seq_in_index: 1}
+  - {name: idx1, column_name: enable, seq_in_index: 1}
+  - {name: idx1, column_name: item_id, seq_in_index: 2}
+  foreign-keys:
+  - {constraint_name: member_items_ibfk_1, column_name: member_id, ordinal_position: 1,
+    position_in_unique_constraint: 1, referenced_table_name: members, referenced_column_name: id}
+  ex-relations:
+  - referenced_table_name: members
+    columns:
+    - {from: member_id, to: id}
+    this_conn: one
+    that_conn: zero-or-one
+  - referenced_table_name: items
+    columns:
+    - {from: item_id, to: id}
+    this_conn: onlyone
+    that_conn: many
+- table: members
+  group: DATA
+  columns:
+  - {name: id, type: int(11), key: PRI, extra: auto_increment, default: null, not-null: false}
+  - {name: name, type: varchar(30), key: '', extra: '', default: null, not-null: false}
+  - {name: gender, type: tinyint(4), key: '', extra: '', default: '0', not-null: false}
+  indexes:
+  - {name: PRIMARY, column_name: id, seq_in_index: 1}
+  foreign-keys: []
+  ex-relations: []

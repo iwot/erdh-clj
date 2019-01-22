@@ -1,0 +1,33 @@
+@startuml
+package "MASTER " as MASTER {
+  entity "item_types" as item_types <<D,TRANSACTION_MARK_COLOR>> {
+    + id [PK]
+    --
+    name
+  }
+}
+package "DATA " as DATA {
+  entity "items" as items <<D,TRANSACTION_MARK_COLOR>> {
+    + id [PK]
+    --
+    name
+    type
+  }
+  entity "member_items" as member_items <<D,TRANSACTION_MARK_COLOR>> {
+    + id [PK]
+    --
+    member_id
+    enable
+    ...
+  }
+  entity "members" as members <<D,TRANSACTION_MARK_COLOR>> {
+    + id [PK]
+    --
+    name
+    gender
+  }
+items  ------  item_types
+member_items  ----o|  members
+member_items  ||---{  items
+}
+@enduml

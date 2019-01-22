@@ -1,0 +1,26 @@
+- table: member_items
+  is_master: true
+  group: DATA
+  relations:
+    - referenced_table_name: members
+      columns:
+        - from: "member_id"
+          to: "id"
+      this_conn: "one"
+      that_conn: "zero-or-one"
+    - referenced_table_name: items
+      columns:
+        - from: "item_id"
+          to: "id"
+      this_conn: "onlyone"
+      that_conn: "many"
+- table: items
+  is_master: true
+  group: DATA
+- table: item_types
+  is_master: true
+  group: MASTER
+- table: member_items
+  group: DATA
+- table: members
+  group: DATA

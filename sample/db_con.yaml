@@ -1,0 +1,4 @@
+dbtype: mysql
+dbname: ELTEST01
+user: root
+password: password
