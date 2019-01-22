@@ -121,8 +121,8 @@
                        (-> []
                            (conj (format (:package-start convert-map) package package))
                            (convert-tables-to-entities (:tables group))
-                           (convert-ex-relations-to-cardinalities (get-all-ex-relations group))
                            (conj (:package-end convert-map))
+                           (convert-ex-relations-to-cardinalities (get-all-ex-relations group))
                            )
                        )))
         result-body (flatten body)]

@@ -26,8 +26,8 @@ package "DATA " as DATA {
     name
     gender
   }
+}
 items  ------  item_types
 member_items  ----o|  members
 member_items  ||---{  items
-}
 @enduml
