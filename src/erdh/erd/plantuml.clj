@@ -19,7 +19,7 @@
                         :one-more "|{"
                         :zero-many "o{"}
                  }
-   :package-start "package \"%s \" as %s {"
+   :package-start "package \"%s\" {"
    :package-end "}"
    :master-entity-start "  entity \"%s\" as %s <<M,MASTER_MARK_COLOR>> {"
    :master-entity-end "  }"
@@ -29,7 +29,7 @@
    :primary-column-end "    --"
    :foregin-key-column "    # %s"
    :normal-column "    %s"
-   :column-omission "    ..."
+   :column-omission "    .. %d more .."
    })
 
 (defn convert-column-into-columns
@@ -46,7 +46,7 @@
   (loop [result result
          cnt 0]
     (if (nth columns cnt nil)
-      (if (> cnt max) (conj result (:column-omission convert-map))
+      (if (> cnt max) (conj result (format (:column-omission convert-map) (- (count columns) max)))
           (recur (into result (convert-column-into-columns [] (nth columns cnt))) (inc cnt)))
       result)))
 
@@ -96,7 +96,7 @@
   [db-data]
   (-> []
       (conj (:start convert-map))
-      (conj (format (:package-start convert-map) (:db_name db-data) (:db_name db-data)))
+      (conj (format (:package-start convert-map) (:db_name db-data)))
       (convert-tables-to-entities (:tables db-data))
       (convert-ex-relations-to-cardinalities (get-all-ex-relations db-data))
       (conj (:package-end convert-map))
@@ -114,17 +114,21 @@
 (defn convert-for-group
   "グループ分け（パッケージ分け）をしたpumlデータを返す"
   [db-data]
-  (let [body (into []
-                   (for [group (get-by-group db-data)
-                         :when (> (count (:tables group)) 0)]
-                     (let [package (if (empty? (:group group)) (:db_name db-data) (:group group))]
-                       (-> []
-                           (conj (format (:package-start convert-map) package package))
-                           (convert-tables-to-entities (:tables group))
-                           (conj (:package-end convert-map))
-                           (convert-ex-relations-to-cardinalities (get-all-ex-relations group))
-                           )
-                       )))
-        result-body (flatten body)]
-    (into (into [(:start convert-map)] result-body) [(:end convert-map)]))
-  )
+  (let [body
+        (into []
+              (for [group (get-by-group db-data)
+                    :when (> (count (:tables group)) 0)]
+                (let [package (if (empty? (:group group)) (:db_name db-data) (:group group))]
+                  (-> []
+                      (conj (format (:package-start convert-map) package))
+                      (convert-tables-to-entities (:tables group))
+                      (conj (:package-end convert-map))))))
+        body-with-rel
+        (into body
+              (for [group (get-by-group db-data)
+                    :when (> (count (:tables group)) 0)]
+                (let [package (if (empty? (:group group)) (:db_name db-data) (:group group))]
+                  (-> []
+                      (convert-ex-relations-to-cardinalities (get-all-ex-relations group))))))
+        result-body (flatten body-with-rel)]
+    (into (into [(:start convert-map)] result-body) [(:end convert-map)])))
