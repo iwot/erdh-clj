@@ -1,5 +1,6 @@
 (ns erdh.core
-  (:require [erdh.db.info :as info]
+  (:require [erdh.db.mysql-info :as mysql-info]
+            [erdh.db.psql-info :as psql-info]
             [erdh.db.db-connection :as connection]
             [clojure.tools.cli :refer [parse-opts]]
             [clojure.java.io :as io]
@@ -12,7 +13,7 @@
 (def cli-options
   ;; 引数が必要なオプション
   [["-s" "--source SOURCE-TYPE" "Source type"
-    :validate [#(some #{%} '("mysql")) "Must be in [mysql]"]]
+    :validate [#(some #{%} '("mysql" "postgres")) "Must be in [mysql]"]]
    ["-f" "--source-from SOURCE-FILE-PATH" "Source file path"
     :validate [#(.exists (io/as-file %)) "file not found"]]
    ["-i" "--intermediate INTERMIDIATE-TYPE" "Intermidiate data type"
@@ -34,9 +35,11 @@
 (defn get-db-data-from-source
   "sourceからDBのデータを取得する"
   [options]
-  (cond (= "mysql" (:source options)) (info/gen-db-mysql (connection/get-db-from-yaml (:source-from options)))
+  (cond (= "mysql" (:source options)) (mysql-info/gen-db-mysql
+                                       (connection/get-db-from-yaml (:source-from options)))
         (= "yaml" (:source options)) {}
-        (= "postgres" (:source options)) {}
+        (= "postgres" (:source options)) (psql-info/gen-db-postgres
+                                          (connection/get-db-from-yaml (:source-from options)))
         :else {}))
 
 (defn save-to-file
@@ -70,11 +73,18 @@
   ; (println (string/join "\n" (puml/convert db-data)))
   )
 
+(defn merge-ex-table-info-to-db
+  [options db-data ex-info]
+  (cond (= "mysql" (:source options)) (mysql-info/merge-ex-table-info-to-db db-data ex-info)
+        (= "yaml" (:source options)) {}
+        (= "postgres" (:source options)) (psql-info/merge-ex-table-info-to-db db-data ex-info)
+        :else {}))
+
 (defn main-proc
   [output-path options]
   (let [db-data (get-db-data-from-source options)
         ex-info (get-extra-info options)
-        db-data-wtih-ex (info/merge-ex-table-info-to-db db-data ex-info)]
+        db-data-wtih-ex (merge-ex-table-info-to-db options db-data ex-info)]
     (save-intermediate-if-opt-in db-data-wtih-ex options)
     (save-erd-if-opt-in db-data-wtih-ex output-path)))
 

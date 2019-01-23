@@ -1,4 +1,4 @@
-(ns erdh.db.info
+(ns erdh.db.mysql-info
   (:require [erdh.db.mysql-reader :as reader]))
 
 (declare gen-db gen-mysql-tables gen-mysql-table-one

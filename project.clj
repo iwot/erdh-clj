@@ -8,7 +8,8 @@
                  [mysql/mysql-connector-java "8.0.13"]
                  [com.layerware/hugsql "0.4.9"]
                  [io.forward/yaml "1.0.9"]
-                 [org.clojure/tools.cli "0.4.1"]]
+                 [org.clojure/tools.cli "0.4.1"]
+                 [org.postgresql/postgresql "9.4-1206-jdbc42"]]
   :repl-options {:init-ns erdh.core}
   :main erdh.core
   :profiles {:uberjar {:aot :all}})
