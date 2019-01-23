@@ -31,16 +31,23 @@ SELECT INDEX_NAME
 
 -- :name table-foreign-keys
 -- :command :query
-SELECT CONSTRAINT_NAME
-     , COLUMN_NAME
-     , ORDINAL_POSITION
-     , POSITION_IN_UNIQUE_CONSTRAINT
-     , REFERENCED_TABLE_NAME
-     , REFERENCED_COLUMN_NAME
-  FROM information_schema.key_column_usage
- WHERE constraint_schema = :schema
-   AND table_name = :tablename
-   AND CONSTRAINT_NAME <> 'PRIMARY'
+SELECT A.CONSTRAINT_NAME
+     , A.COLUMN_NAME
+     , A.ORDINAL_POSITION
+     , A.POSITION_IN_UNIQUE_CONSTRAINT
+     , A.REFERENCED_TABLE_NAME
+     , A.REFERENCED_COLUMN_NAME
+  FROM information_schema.key_column_usage A
+ WHERE A.constraint_schema = :schema
+   AND A.table_name = :tablename
+   AND A.CONSTRAINT_NAME <> 'PRIMARY'
+   AND EXISTS(
+     SELECT *
+       FROM information_schema.TABLE_CONSTRAINTS AS B
+      WHERE B.TABLE_SCHEMA = A.constraint_schema
+        AND B.TABLE_NAME = A.table_name
+        AND B.CONSTRAINT_TYPE = 'FOREIGN KEY'
+   )
  ORDER BY CONSTRAINT_NAME;
 
 
