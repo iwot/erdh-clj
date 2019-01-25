@@ -1,6 +1,7 @@
 (ns erdh.core
   (:require [erdh.db.mysql-info :as mysql-info]
             [erdh.db.psql-info :as psql-info]
+            [erdh.db.info.sqlite.info :as sqlite-info]
             [erdh.db.db-connection :as connection]
             [clojure.tools.cli :refer [parse-opts]]
             [clojure.java.io :as io]
@@ -13,7 +14,7 @@
 (def cli-options
   ;; 引数が必要なオプション
   [["-s" "--source SOURCE-TYPE" "Source type"
-    :validate [#(some #{%} '("mysql" "postgres")) "Must be in [mysql]"]]
+    :validate [#(some #{%} '("mysql" "postgres" "sqlite")) "Must be in [mysql]"]]
    ["-f" "--source-from SOURCE-FILE-PATH" "Source file path"
     :validate [#(.exists (io/as-file %)) "file not found"]]
    ["-i" "--intermediate INTERMIDIATE-TYPE" "Intermidiate data type"
@@ -39,6 +40,8 @@
                                        (connection/get-db-from-yaml (:source-from options)))
         (= "yaml" (:source options)) {}
         (= "postgres" (:source options)) (psql-info/gen-db-postgres
+                                          (connection/get-db-from-yaml (:source-from options)))
+        (= "sqlite" (:source options)) (sqlite-info/gen-db-sqlite
                                           (connection/get-db-from-yaml (:source-from options)))
         :else {}))
 
@@ -78,6 +81,7 @@
   (cond (= "mysql" (:source options)) (mysql-info/merge-ex-table-info-to-db db-data ex-info)
         (= "yaml" (:source options)) {}
         (= "postgres" (:source options)) (psql-info/merge-ex-table-info-to-db db-data ex-info)
+        (= "sqlite" (:source options)) (sqlite-info/merge-ex-table-info-to-db db-data ex-info)
         :else {}))
 
 (defn main-proc
