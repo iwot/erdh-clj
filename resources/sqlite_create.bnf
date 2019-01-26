@@ -1,18 +1,33 @@
-<S> = <CREATE> <BLANK+> <TABLE> <BLANK+> TABLE_NAME <BLANK*> <LEFTP> COLUMN_LINE* LAST_COLUMN_LINE
-COLUMN_LINE = <BLANK*> COLUMN <SPACE+> COLUMN_TYPE <BLANK*> OTHER* <BLANK*> <ENDOFCOLUMN> <BLANK*>
-LAST_COLUMN_LINE = <BLANK*> COLUMN <SPACE+> COLUMN_TYPE <BLANK*> OTHER* <BLANK*> <RIGHTP> <BLANK*>
+<R> = <CREATE> <BLANK+> <TABLE> <BLANK+> <TABLE_NAME> <BLANK*> <LEFTP>
+      <BLANK*> CL_OR_FK <BLANK*> <COMMENT*>
+      ( <','> <BLANK*> CL_OR_FK <BLANK*> <COMMENT*> )*
+      <RIGHTP>
 
-SPACE = #'\s|\r\n|\n'
-BLANK = #"(\s+|\s*--.*(\r\n|\n)*|\r\n|\n)"
+<CL_OR_FK> = FK | CL 
+CL = CL_NAME <SPCAE+> CL_TYPE ( <SPCAE*> NOTNULL )? ( <SPCAE*> DEFAULT <SPCAE*> DEFAULT_VALUE )?
+NOTNULL = #'(?i)not\s+null'
+DEFAULT = #'(?i)default'
+DEFAULT_VALUE = #'"[^"]*"' | #'[0-9]+' |  #'(?i)(true|false|null)'
+CL_NAME = #'[a-zA-Z0-9_]+'
+CL_TYPE = #'(?i)(TEXT|NUMERIC|INTEGER|INT|REAL|NONE|PRIMARY\s+KEY)'
+BLANK = #"(\s*|\s*--.*(\r\n|\n)?|\r\n|\n)"
+COMMENT = #'--.*' EOL*
+EOL = '\r\n' | '\n'
+FK = FK_FROM <SPCAE+ REFER SPCAE+> FK_TO 
+<FK_FROM> = <FK_FROM_START> FK_FROM_KEYS <FK_FROM_END>
+<FK_TO> = TABLE_NAME <SPCAE* FK_TO_START SPCAE*> FK_TO_KEYS <SPCAE* FK_TO_END>
+REFER = #'(?i)REFERENCES'
+FK_FROM_START = #'(?i)FOREIGN\s+KEY\s+\('
+FK_FROM_END = #'\)'
+FK_TO_START = #'\('
+FK_TO_END = #'\)'
+FK_FROM_KEYS = ( FK_VALUE <SPCAE* ','? SPCAE*> )+
+FK_TO_KEYS = ( FK_VALUE <SPCAE* ','? SPCAE*> )+
+<FK_VALUE> = #'[a-zA-Z0-9_]+'
+DEF_SEP = ','
 CREATE = #'(?i)create'
 TABLE = #'(?i)table'
 TABLE_NAME = #"[a-zA-Z0-9-_]+"
-OTHER = #'[^,]'
-COLUMN = #'[a-zA-Z]\S*'
-COLUMN_TYPE = COLUMN_TYPE_OTHER
-<COLUMN_TYPE_OTHER> = #'PRIMARY\s+KEY|[a-zA-Z0-9]+(\([0-9]+\))?\S*'
-COLUMN_TYPE_PRIMARY = 'PRIMARY KEY'
-ENDOFCOLUMN = ','
 LEFTP = '('
 RIGHTP = ')'
-NEWLINE = '\n' | '\r\n'
+SPCAE = #'\s' | '\r\n' '\n'

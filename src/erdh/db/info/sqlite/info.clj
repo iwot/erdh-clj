@@ -50,7 +50,7 @@
   (if-let [indexes (reader/table-indexes-reader db table-name)]
     (map (fn
            [row]
-           {:name (:indexname row)
+           {:name (:name row)
             :column_name ""
             :seq_in_index ""}) indexes)
     []))
