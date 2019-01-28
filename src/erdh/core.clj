@@ -2,6 +2,7 @@
   (:require [erdh.db.mysql-info :as mysql-info]
             [erdh.db.psql-info :as psql-info]
             [erdh.db.info.sqlite.info :as sqlite-info]
+            [erdh.db.info.yaml.info :as yaml-info]
             [erdh.db.db-connection :as connection]
             [clojure.tools.cli :refer [parse-opts]]
             [clojure.java.io :as io]
@@ -14,7 +15,7 @@
 (def cli-options
   ;; 引数が必要なオプション
   [["-s" "--source SOURCE-TYPE" "Source type"
-    :validate [#(some #{%} '("mysql" "postgres" "sqlite")) "Must be in [mysql]"]]
+    :validate [#(some #{%} '("mysql" "postgres" "sqlite" "yaml")) "Must be in [mysql postgres sqlite yaml]"]]
    ["-f" "--source-from SOURCE-FILE-PATH" "Source file path"
     :validate [#(.exists (io/as-file %)) "file not found"]]
    ["-i" "--intermediate INTERMIDIATE-TYPE" "Intermidiate data type"
@@ -38,7 +39,7 @@
   [options]
   (cond (= "mysql" (:source options)) (mysql-info/gen-db-mysql
                                        (connection/get-db-from-yaml (:source-from options)))
-        (= "yaml" (:source options)) {}
+        (= "yaml" (:source options)) (yaml-info/gen-db-yaml (:source-from options))
         (= "postgres" (:source options)) (psql-info/gen-db-postgres
                                           (connection/get-db-from-yaml (:source-from options)))
         (= "sqlite" (:source options)) (sqlite-info/gen-db-sqlite
@@ -72,14 +73,12 @@
     (if (count output-path)
       (save-to-file output-path output (str "saving plantuml data to " output-path))
       (println "printing plantuml data" \newline "```puml" \newline output \newline "```")))
-  ; (println (puml/convert db-data))
-  ; (println (string/join "\n" (puml/convert db-data)))
   )
 
 (defn merge-ex-table-info-to-db
   [options db-data ex-info]
   (cond (= "mysql" (:source options)) (mysql-info/merge-ex-table-info-to-db db-data ex-info)
-        (= "yaml" (:source options)) {}
+        (= "yaml" (:source options)) (yaml-info/merge-ex-table-info-to-db db-data ex-info)
         (= "postgres" (:source options)) (psql-info/merge-ex-table-info-to-db db-data ex-info)
         (= "sqlite" (:source options)) (sqlite-info/merge-ex-table-info-to-db db-data ex-info)
         :else {}))
