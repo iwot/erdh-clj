@@ -84,21 +84,23 @@
                  )
 
 (defn get-all-ex-relations
-  [db-data]
+  [db-data target-tables]
   (remove nil? (into []
                      (for [table (:tables db-data)]
                        (if (> (count (:ex-relations table)) 0)
-                         (conj [] {:table (:table table), :ex-relations (:ex-relations table)})
+                         (let [ex-relations
+                               (filterv (fn [r] (some #(= (:referenced_table_name r) %) target-tables)) (:ex-relations table))]
+                           (conj [] {:table (:table table), :ex-relations ex-relations}))
                          nil)))))
 
 (defn convert
   "グループ分け（パッケージ分け）をせずにpumlデータを返す"
-  [db-data]
+  [db-data target-tables]
   (-> []
       (conj (:start convert-map))
       (conj (format (:package-start convert-map) (:db_name db-data)))
       (convert-tables-to-entities (:tables db-data))
-      (convert-ex-relations-to-cardinalities (get-all-ex-relations db-data))
+      (convert-ex-relations-to-cardinalities (get-all-ex-relations db-data target-tables))
       (conj (:package-end convert-map))
       (conj (:end convert-map))))
 
@@ -113,11 +115,11 @@
 
 (defn convert-for-group
   "グループ分け（パッケージ分け）をしたpumlデータを返す"
-  [db-data]
+  [db-data target-groups target-tables]
   (let [body
         (into []
               (for [group (get-by-group db-data)
-                    :when (> (count (:tables group)) 0)]
+                    :when (and (> (count (:tables group)) 0) (some #(= (:group group) %) target-groups))]
                 (let [package (if (empty? (:group group)) (:db_name db-data) (:group group))]
                   (-> []
                       (conj (format (:package-start convert-map) package))
@@ -126,9 +128,9 @@
         body-with-rel
         (into body
               (for [group (get-by-group db-data)
-                    :when (> (count (:tables group)) 0)]
+                    :when (and (> (count (:tables group)) 0) (some #(= (:group group) %) target-groups))]
                 (let [package (if (empty? (:group group)) (:db_name db-data) (:group group))]
                   (-> []
-                      (convert-ex-relations-to-cardinalities (get-all-ex-relations group))))))
+                      (convert-ex-relations-to-cardinalities (get-all-ex-relations group target-tables))))))
         result-body (flatten body-with-rel)]
     (into (into [(:start convert-map)] result-body) [(:end convert-map)])))
