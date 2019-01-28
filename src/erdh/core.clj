@@ -13,7 +13,6 @@
   (:gen-class))
 
 (def cli-options
-  ;; 引数が必要なオプション
   [["-s" "--source SOURCE-TYPE" "Source type"
     :validate [#(some #{%} '("mysql" "postgres" "sqlite" "yaml")) "Must be in [mysql postgres sqlite yaml]"]]
    ["-f" "--source-from SOURCE-FILE-PATH" "Source file path"
@@ -27,7 +26,9 @@
     :validate [#(some #{%} '("puml")) "Must be in [puml]"]]
    ["-e" "--ex EXTRA-TABLE-INFO-FILE-PATH" "ex-table-info file path"
     :validate [#(.exists (io/as-file %)) "file not found"]]
-   ;; デフォルトがnilのbooleanオプション
+   ["-g" "--group GROUP" "Target group (comma separated)"
+    :parse-fn #(set (for [g (string/split % #",")] (string/trim g)))
+    :default nil]
    ["-h" "--help"]])
 
 (defn error-msg [errors]
@@ -43,8 +44,8 @@
         (= "postgres" (:source options)) (psql-info/gen-db-postgres
                                           (connection/get-db-from-yaml (:source-from options)))
         (= "sqlite" (:source options)) (sqlite-info/gen-db-sqlite
-                                          (connection/get-db-from-yaml (:source-from options)))
-        :else {}))
+                                        (connection/get-db-from-yaml (:source-from options)))
+        :else nil))
 
 (defn save-to-file
   [path data print-message]
@@ -68,8 +69,8 @@
     nil))
 
 (defn save-erd-if-opt-in
-  [db-data output-path]
-  (let [output (string/join "\n" (puml/convert-for-group db-data))]
+  [db-data output-path target-groups target-tables]
+  (let [output (string/join "\n" (puml/convert-for-group db-data target-groups target-tables))]
     (if (count output-path)
       (save-to-file output-path output (str "saving plantuml data to " output-path))
       (println "printing plantuml data" \newline "```puml" \newline output \newline "```")))
@@ -81,19 +82,63 @@
         (= "yaml" (:source options)) (yaml-info/merge-ex-table-info-to-db db-data ex-info)
         (= "postgres" (:source options)) (psql-info/merge-ex-table-info-to-db db-data ex-info)
         (= "sqlite" (:source options)) (sqlite-info/merge-ex-table-info-to-db db-data ex-info)
-        :else {}))
+        :else nil))
+
+(defn get-table-of-group-map
+  [data]
+  (if data
+    (into {} (for [r data] {(:table r) (:group r)}))
+    {}))
+
+(defn db-tables-filter-by-groups
+  [grous data table-to-grpup-map]
+  (if (not (or (empty? grous) (empty? data)))
+    {:db_name (:db_name data)
+     :tables (filter (fn [d] (some #(= (:group d) %) grous)) (:tables data))}
+    data))
+
+; (defn ex-tables-filter-by-groups
+;   [grous data table-to-grpup-map]
+;   (if (not (or (empty? grous) (empty? data)))
+;     (filter (fn [d] (some #(= (:group d) %) grous)) (ex-relations-filter-by-groups grous data table-to-grpup-map))
+;     data))
+
+(defn get-target-tables
+  "中間形式のデータから対象となるテーブル（対象グループのテーブル）一覧を返す"
+  [db-data target-groups]
+  (if (empty? target-groups)
+    (for [table (:tables db-data)]
+      (:table table))
+    (for [table (:tables db-data)
+          :when (some #(= (:group table) %) target-groups)]
+      (:table table))))
+
+(defn get-target-groups
+  [db-data options]
+  (if (empty? (get options :group nil))
+    (into #{} (for [table (:tables db-data)]
+                (:group table)))
+    (get options :group)))
 
 (defn main-proc
   [output-path options]
   (let [db-data (get-db-data-from-source options)
         ex-info (get-extra-info options)
-        db-data-wtih-ex (merge-ex-table-info-to-db options db-data ex-info)]
-    (save-intermediate-if-opt-in db-data-wtih-ex options)
-    (save-erd-if-opt-in db-data-wtih-ex output-path)))
+        table-to-grpup-map (into (get-table-of-group-map (:tables db-data)) (get-table-of-group-map ex-info))
+        db-data-wtih-ex (if db-data (merge-ex-table-info-to-db options db-data ex-info))
+        target-groups (get-target-groups db-data-wtih-ex options)
+        target-tables (get-target-tables db-data-wtih-ex target-groups)]
+    (println "target-groups" target-groups)
+    (if db-data-wtih-ex
+      (do
+        (save-intermediate-if-opt-in db-data-wtih-ex options)
+        (if output-path (save-erd-if-opt-in db-data-wtih-ex output-path target-groups target-tables)
+            (println "plantuml data:" db-data-wtih-ex)))
+      (println "db data retrieve failure"))))
 
 (defn -main
   [& args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)]
     (cond
       errors (println (error-msg errors))
-      :else (main-proc (if (empty? arguments) nil (nth arguments 0)) options))))
+      :else (main-proc (if (> (count arguments) 0) (nth arguments 0) nil) options))))

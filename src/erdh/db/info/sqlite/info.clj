@@ -76,15 +76,6 @@
                         nil))]
     (nth (remove nil? result-list) 0 nil)))
 
-(defn merge-ex-table-info-to-db-old
-  [db-data ex-info]
-  {:db_name (:db_name db-data)
-   :tables (into []
-                 (for [table (:tables db-data)]
-                   (if-let [ex (:relations (get-table-ex-info (:table table) ex-info))]
-                     (update-in table [:ex-relations] (fn [old] ex))
-                     table)))})
-
 (defn merge-ex-table-info-to-db-inner-for-relation
   [table ex-relations]
   (if (nil? ex-relations)
