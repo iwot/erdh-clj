@@ -13,22 +13,10 @@
   (:gen-class))
 
 (def cli-options
-  [["-s" "--source SOURCE-TYPE" "Source type"
-    :validate [#(some #{%} '("mysql" "postgres" "sqlite" "yaml")) "Must be in [mysql postgres sqlite yaml]"]]
-   ["-f" "--source-from SOURCE-FILE-PATH" "Source file path"
-    :validate [#(.exists (io/as-file %)) "file not found"]]
-   ["-i" "--intermediate INTERMIDIATE-TYPE" "Intermidiate data type"
-    :default "yaml"
-    :validate [#(some #{%} '("yaml")) "Must be in [yaml]"]]
-   ["-o" "--intermediate-to INTERMIDIATE-SAVE-TO" "Intermidiate save path"]
-   ["-t" "--type ERD-DATA-TYPE" "ERD data type"
-    :default "puml"
-    :validate [#(some #{%} '("puml")) "Must be in [puml]"]]
-   ["-e" "--ex EXTRA-TABLE-INFO-FILE-PATH" "ex-table-info file path"
-    :validate [#(.exists (io/as-file %)) "file not found"]]
-   ["-g" "--group GROUP" "Target group (comma separated)"
-    :parse-fn #(set (for [g (string/split % #",")] (string/trim g)))
-    :default nil]
+  [
+   ["-c" "--config CONFIG-PATH" "Config file path"
+    :validate [#(.exists (io/as-file %)) "Config file not found"]
+    ]
    ["-h" "--help"]])
 
 (defn error-msg [errors]
@@ -124,8 +112,8 @@
   [output-path options]
   (let [db-data (get-db-data-from-source options)
         ex-info (get-extra-info options)
-        table-to-grpup-map (into (get-table-of-group-map (:tables db-data)) (get-table-of-group-map ex-info))
-        db-data-wtih-ex (if db-data (merge-ex-table-info-to-db options db-data ex-info))
+        table-to-grpup-map (into (get-table-of-group-map (:tables db-data)) (get-table-of-group-map (get ex-info :tables nil)))
+        db-data-wtih-ex (if db-data (merge-ex-table-info-to-db options db-data (get ex-info :tables nil)))
         target-groups (get-target-groups db-data-wtih-ex options)
         target-tables (get-target-tables db-data-wtih-ex target-groups)]
     (println "target-groups" target-groups)
@@ -136,9 +124,39 @@
             (println "plantuml data:" db-data-wtih-ex)))
       (println "db data retrieve failure"))))
 
+(defn make-option-confirm
+  [yaml-data]
+  (let [errors
+        [(if (some #(= (:source yaml-data) %) #{"mysql" "postgres" "sqlite" "yaml"}) nil "source type error")
+         (if (.exists (io/as-file (:source-from yaml-data))) nil "source from not found")
+         (if (get yaml-data :ex-info nil)
+           (if (.exists (io/as-file (:ex-info yaml-data))) nil "extra info file not found")
+           nil)]
+        errors (remove nil? errors)]
+    (if (> (count errors) 0)
+      errors
+      nil)))
+
+(defn make-options
+  [path]
+  (let [yaml-data (yaml/from-file path)
+        errors (make-option-confirm yaml-data)]
+    (if (not errors)
+      {:options {:source (:source yaml-data)
+                 :source-from (:source-from yaml-data)
+                 :intermediate "yaml"
+                 :intermediate-to (get-in yaml-data [:intermediate :save-to] nil)
+                 :type "yaml"
+                 :ex (:ex-info yaml-data)
+                 :group (into #{} (get yaml-data :group []))}
+       :errors nil}
+      {:options nil
+       :errors errors})))
+
 (defn -main
   [& args]
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)]
-    (cond
-      errors (println (error-msg errors))
-      :else (main-proc (if (> (count arguments) 0) (nth arguments 0) nil) options))))
+    (if errors (println (error-msg errors))
+        (let [{:keys [options errors]} (make-options (:config options))]
+          (if errors (println (error-msg errors))
+              (main-proc (if (> (count arguments) 0) (nth arguments 0) nil) options))))))
