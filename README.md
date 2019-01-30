@@ -13,6 +13,7 @@ DBへの接続情報に"C:\\path\\to\\db_con.yaml"を使用し、
 java -jar erdh-0.1.8-SNAPSHOT-standalone.jar -c "C:\\path\\to\\config_mysql.yaml" "C:\\path\\to\\result_m.puml"
 ```
 
+config_mysql.yaml
 ```config_mysql.yaml
 # mysql,postgres,sqliteから選択
 source: mysql
@@ -29,6 +30,7 @@ intermediate:
 ex-info: "C:\\path\\to\\ex_table_info.yaml"
 ```
 
+db_con_mysql.yaml
 ```db_con_mysql.yaml
 dbtype: mysql
 host: localhost
@@ -37,6 +39,7 @@ user: root
 password: password
 ```
 
+ex_table_info.yaml
 ```ex_table_info.yaml
 tables:
 - table: member_items
@@ -67,8 +70,8 @@ tables:
   group: DATA
 ```
 
-```
 this_conn,that_conn に使用するカーディナリティマップ
+```
 {
  :this {:one "--"
 		:onlyone "||"
