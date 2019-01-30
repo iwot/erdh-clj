@@ -70,20 +70,20 @@ tables:
   group: DATA
 ```
 
-this_conn,that_conn に使用するカーディナリティマップ
+this_conn,that_conn に使用するカーディナリティマップ(Clojure内での定義)
 ```
 {
  :this {:one "--"
-		:onlyone "||"
-		:zero-or-one "|o"
-		:many "}-"
-		:one-more "}|"
-		:zero-many "}o"}
+ :onlyone "||"
+ :zero-or-one "|o"
+ :many "}-"
+ :one-more "}|"
+ :zero-many "}o"}
  :that {:one "--"
-		:onlyone "||"
-		:zero-or-one "o|"
-		:many "-{"
-		:one-more "|{"
-		:zero-many "o{"}
+ :onlyone "||"
+ :zero-or-one "o|"
+ :many "-{"
+ :one-more "|{"
+ :zero-many "o{"}
 }
 ```
